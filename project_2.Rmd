@@ -1,8 +1,5 @@
 ---
-title: "Reproducible Research: Peer Assessment 2"
-output: 
-  html_document:
-    keep_md: true
+title: 'Reproducible Research: Peer Assessment 2'
 ---
 
 ## Synopsis
@@ -14,84 +11,59 @@ In this report we try to answer two questions:
 1) Across the United States, which types of events (as indicated in the EVTYPE variable) are most harmful with respect to population health?
 2) Across the United States, which types of events have the greatest economic consequences?
 
-## Loading and preprocessing the data
-```{r loading_preprocessing, echo=TRUE}
-# load the activity-data
-activity <- read.csv("activity.csv")
-
-# create new column date in data-format
-activity$date2 <- as.Date(activity$date, format = "%Y-%m-%d")
-```
-
-## What is mean total number of steps taken per day?
-```{r total_steps_per_day, echo=TRUE}
-# create an aggregate data set of the sum of the steps per day
-agg_day_activity <- setNames(aggregate(activity$steps, by=list(activity$date2), FUN=sum, na.rm=TRUE, na.action=NULL),c("date","steps"))
-
-# create a histogram of the total number of steps per day
-hist(agg_day_activity$steps, main = "Histogram of total number of steps per day", xlab = "Steps per day")
-
-# calculate mean total number of steps per day
-round(mean(agg_day_activity$steps))
-
-# calculate median total number of steps per day
-round(median(agg_day_activity$steps))
-
-```
-
-
-## What is the average daily activity pattern?
-```{r average_daily_activity_pattern, echo=TRUE}
-
-# create dataset with mean number of steps per interval
-mean_steps_per_interval <- aggregate(list(steps = activity$steps), list(interval=activity$interval), mean,na.rm=TRUE, na.action=NULL)
-
-# create the time-series plot
-plot(mean_steps_per_interval,type='l', main="average number of steps per interval")
-
-# what is the interval index with the highest average number of steps
-mean_steps_per_interval[which(mean_steps_per_interval$steps == max(mean_steps_per_interval$steps)),]
-```
-
-
-## Imputing missing values
-```{r impute_missing_values, echo=TRUE}
-
-# calculate the total number of missing values ('NA')
-sum(is.na(activity$steps))
-
-# replace all missing values with median for that interval
-for(i in 1:nrow(activity)) {
-        if(is.na(activity$steps[i])) {
-                mean_value <- mean_steps_per_interval$steps[which(mean_steps_per_interval$interval==activity$interval[i])]
-                activity$steps[i] <- mean_value
-        }
-}
-
-# create a new aggregate dataset of the sum of the steps per day
-agg_day_activity_imputed <- setNames(aggregate(activity$steps, by=list(activity$date2), FUN=sum, na.rm=TRUE, na.action=NULL),c("date","steps"))
-
-# create a new histogram of the total number of steps per day
-hist(agg_day_activity$steps, main = "Histogram of total number of steps per day", xlab = "Steps per day")
-
-```
-
-
-## Are there differences in activity patterns between weekdays and weekends?
-
-```{r difference_weekdays_weekends, echo = TRUE, fig.width=6, fig.height = 6}
-
-# create a weekday vector
-weekdays <- c('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday')
-
-# create extra factor variable weekday/weekend
-activity$weekday <- factor(weekdays(activity$date2))
-activity$week_weekend <- factor(ifelse(activity$weekday %in% c("zaterdag","zondag"),"weekend","week"))
-
-# create aggregate: steps per interval and week/weekend
-averages_week_weekend <- aggregate(steps ~ interval + week_weekend, data = activity, mean)
-
+## load neccesary packages
+```{r load_packages, echo=TRUE}
+library(ggplot2) # enhanced grahics
+library(ggthemes) # advanced themese
+library(reshape2)
 library(lattice)
-xyplot(averages_week_weekend$steps ~ averages_week_weekend$interval | factor(averages_week_weekend$week_weekend), type = "l", layout = c(1, 2), xlab = "Interval", ylab = "Number of steps")
+```
 
+
+## Dataprocessing
+```{r dataprocessing, echo=TRUE}
+
+# download the zip file
+download.file("https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2", destfile="./repdata-data-StormData.csv.bz2", method="curl")
+
+
+# read the csv from the zipfile
+stormdata <- read.csv('./repdata-data-StormData.csv.bz2', header=T)
+
+# examine which events (based on EVTYPE in the dataset) are the most harmful to population health. 
+# we will make a difference between the number of injuries en the number of fatalities
+
+# determine the number of injuries per event
+injuries_per_event <- aggregate(stormdata$INJURIES, by=list(stormdata$EVTYPE), FUN=sum)
+names(injuries_per_event) <- c("event","injuries")
+
+# determine the number of fatalities per event
+fatalities_per_event <- aggregate(stormdata$FATALITIES, by=list(stormdata$EVTYPE), FUN=sum)
+names(fatalities_per_event) <- c("event","fatalities")
+
+# merge the dataframes with injuries and fatalities
+injuries_and_fatalities <- merge(x = fatalities_per_event, y = injuries_per_event, by = "event", all = TRUE)
+
+# create a new column with the sum of the number of injuries and the number of fatalities
+injuries_and_fatalities$total <- injuries_and_fatalities$injuries + injuries_and_fatalities$fatalities
+
+# determine what is the top 10 of events with the most injuries and fatalities (combined)
+top10_injuries_and_fatalities <- head(injuries_and_fatalities[order(injuries_and_fatalities$total,decreasing = T),],10)
+
+# remove the total-column
+top10_injuries_and_fatalities <- subset(top10_injuries_and_fatalities, select = c(event,injuries,fatalities) )
+
+# reshape the dataframe to the columns: event, injury/fatality, count
+top10_injuries_and_fatalities <- melt(top10_injuries_and_fatalities, id.vars = 'event')
+names(top10_injuries_and_fatalities) <- c("Event", "fatality_injury", "Count")
+```
+
+## Results
+```{r result, echo=TRUE}
+ggplot(top10_injuries_and_fatalities, aes(x = Event, y = Count, fill = fatality_injury)) +
+        geom_bar(stat = "identity") +    
+        labs(fill="") +
+        labs(x="", y="number of injuries and fatalities") + 
+        ggtitle("Weather-related Fatality & Injury Counts")+
+        coord_flip()
 ```
