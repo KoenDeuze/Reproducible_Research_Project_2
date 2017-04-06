@@ -1,7 +1,6 @@
 ---
 title: 'Reproducible Research: Peer Assessment 2'
-Koen Deuze
-2017-04-06
+author: 'Koen Deuze'
 ---
 
 ## Synopsis
@@ -169,4 +168,4 @@ ggplot(top10_damage, aes(x = reorder(event, -total_damage), y = total_damage/100
         theme(axis.text.x = element_text(angle = 90,hjust = 1))
 ```
 
-The analysis shows that across the United States, Tornadoes are most harmful with respect to population health and the that floods have the greatest economic consequences.
+The analysis shows that across the United States, Tornadoes are most harmful with respect to population health and that floods have the greatest economic consequences.
