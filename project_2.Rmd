@@ -98,21 +98,25 @@ names(melted_top10_injuries_and_fatalities) <- c("Event", "fatality_injury", "Co
 top10_injuries_and_fatalities$fatality_injury = top10_injuries_and_fatalities$injuries + top10_injuries_and_fatalities$fatalities
 ```
 
-## Results
-```{r result, echo=TRUE}
-ggplot(melted_top10_injuries_and_fatalities, aes(x = Event, y = Count, fill = fatality_injury)) +
-        geom_bar(stat = "identity") +    
-        labs(fill="") +
-        labs(x="", y="number of injuries and fatalities") + 
-        ggtitle("Weather-related Fatality & Injury Counts")+
-        theme(axis.text.x = element_text(angle=90,hjust=1))
+## Economic_consequences
+Across the United States, which types of events have the greatest economic consequences?
+```{r economic_consequenes, echo=TRUE}
 
-ggplot(top10_injuries_and_fatalities, aes(x = event, y = fatality_injury, fill = fatality_injury)) +
-        geom_bar(stat = "identity") +    
-        labs(fill="") +
-        labs(x="", y="number of injuries and fatalities") + 
-        ggtitle("Weather-related Fatality & Injury Counts")+
-        scale_fill_gradient(low="yellow",high = "red") +
-        theme(axis.text.x = element_text(angle=90,hjust=1))
+# the column PRODMGEXP and CROPDMEXP contain alphabetical characters used to signify magnitude
+# it contains “K” en "k" for thousands, “M” and "m" for millions, “B” and "b" for billions and "H" and "h" for hundreds.
+temp_PROPDMG <- mapvalues(stormdata$PROPDMGEXP,
+                          c("","-","?","+","0","1","2","3","4","5","6","7","8","B","h","H","K","m","M"), 
+                          c(1 ,1  ,1  ,1  , 1e0,1e1,1e2,1e3,1e4,1e5,1e6,1e7,1e8,1e9,1e2,1e2,1e3,1e6,1e6))
+temp_CROPDMG <- mapvalues(stormdata$CROPDMGEXP,
+                          c("","?","0","2","B","k","K","m","M"),
+                          c(1 ,1  ,0  ,1e2,1e9,1e3,1e3,1e6,1e6))
+stormdata$CALC_PROPDMG <- as.numeric(temp_PROPDMG) * stormdata$PROPDMG
+stormdata$CALC_CROPDMG <- as.numeric(temp_CROPDMG) * stormdata$CROPDMG
+stormdata$TOTAL_DMG <- stormdata$CALC_CROPDMG + stormdata$CALC_PROPDMG
 
-```
+# determine the number of fatalities per event
+damage_per_event <- aggregate(stormdata$TOTAL_DMG, by=list(stormdata$EVTYPE), FUN=sum)
+names(damage_per_event) <- c("event","damage")
+
+# determine what is the top 10 of events with the most damage
+top10_damage <- head(damage_per_event[order(damage_per_event$damage,decreasing = T),],10)
