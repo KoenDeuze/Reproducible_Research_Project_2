@@ -114,9 +114,49 @@ stormdata$CALC_PROPDMG <- as.numeric(temp_PROPDMG) * stormdata$PROPDMG
 stormdata$CALC_CROPDMG <- as.numeric(temp_CROPDMG) * stormdata$CROPDMG
 stormdata$TOTAL_DMG <- stormdata$CALC_CROPDMG + stormdata$CALC_PROPDMG
 
-# determine the number of fatalities per event
-damage_per_event <- aggregate(stormdata$TOTAL_DMG, by=list(stormdata$EVTYPE), FUN=sum)
-names(damage_per_event) <- c("event","damage")
+# determine the damage per event
+crop_damage_per_event <- aggregate(stormdata$CALC_CROPDMG, by=list(stormdata$EVTYPE), FUN=sum)
+names(crop_damage_per_event) <- c("event","crop_damage")
+
+prop_damage_per_event <- aggregate(stormdata$CALC_PROPDMG, by=list(stormdata$EVTYPE), FUN=sum)
+names(prop_damage_per_event) <- c("event","prop_damage")
+
+# merge the dataframes with cropdamage and propdamage
+damage_per_event <- merge(x = crop_damage_per_event, y = prop_damage_per_event, by = "event", all = TRUE)
+
+damage_per_event$total_damage <- damage_per_event$crop_damage + damage_per_event$prop_damage
 
 # determine what is the top 10 of events with the most damage
-top10_damage <- head(damage_per_event[order(damage_per_event$damage,decreasing = T),],10)
+top10_damage <- head(damage_per_event[order(damage_per_event$total_damage,decreasing = T),],10)
+top10_damage
+```
+
+ 
+## Results
+```{r result, echo=TRUE}
+
+ggplot(melted_top10_injuries_and_fatalities, aes(x = Event, y = Count, fill = fatality_injury)) +
+         geom_bar(stat = "identity") +    
+         labs(fill="") +
+         labs(x="", y="number of injuries and fatalities") + 
+         ggtitle("Weather-related Fatality & Injury Counts")+
+        theme(axis.text.x = element_text(angle = 90,hjust = 1))
+
+ggplot(top10_injuries_and_fatalities, aes(x = event, y = fatality_injury, fill = fatality_injury)) +
+        geom_bar(stat = "identity") +    
+        labs(fill="") +
+        labs(x="", y="number of injuries and fatalities") + 
+        ggtitle("Weather-related Fatality & Injury Counts")+
+        scale_fill_gradient(low="yellow",high = "red") +
+        theme(axis.text.x = element_text(angle = 90,hjust = 1))
+
+ggplot(top10_damage, aes(x = event, y = total_damage, fill = total_damage)) +
+        geom_bar(stat = "identity") +    
+        labs(fill="") +
+        labs(x="", y="total damage (crop and property)") + 
+        ggtitle("Weather-related crop & property damage")+
+        scale_fill_gradient(low="yellow",high = "red") +
+        theme(axis.text.x = element_text(angle = 90,hjust = 1))
+
+
+```
