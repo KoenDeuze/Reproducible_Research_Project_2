@@ -101,14 +101,14 @@ ggplot(melted_top10_injuries_and_fatalities, aes(x = Event, y = Count, fill = fa
         labs(fill="") +
         labs(x="", y="number of injuries and fatalities") + 
         ggtitle("Weather-related Fatality & Injury Counts")+
-        coord_flip()
+        theme(axis.text.x = element_text(angle=90,hjust=1))
 
 ggplot(top10_injuries_and_fatalities, aes(x = event, y = fatality_injury, fill = fatality_injury)) +
         geom_bar(stat = "identity") +    
         labs(fill="") +
         labs(x="", y="number of injuries and fatalities") + 
         ggtitle("Weather-related Fatality & Injury Counts")+
-        coord_flip() +
-        scale_fill_gradient(low="yellow",high = "red")
+        scale_fill_gradient(low="yellow",high = "red") +
+        theme(axis.text.x = element_text(angle=90,hjust=1))
 
 ```
