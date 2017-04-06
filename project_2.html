@@ -126,8 +126,8 @@ $(document).ready(function () {
 <p>This project involves exploring the U.S. National Oceanic and Atmospheric Administration’s (NOAA) storm database. This database tracks characteristics of major storms and weather events in the United States, including when and where they occur, as well as estimates of any fatalities, injuries, and property damage.</p>
 <p>In this report we try to answer two questions: 1) Across the United States, which types of events (as indicated in the EVTYPE variable) are most harmful with respect to population health? 2) Across the United States, which types of events have the greatest economic consequences?</p>
 </div>
-<div id="load-neccesary-packages" class="section level2">
-<h2>load neccesary packages</h2>
+<div id="load-packages" class="section level2">
+<h2>Load packages</h2>
 <pre class="r"><code>library(ggplot2) # enhanced grahics
 library(ggthemes) # advanced themese
 library(reshape2)
@@ -175,9 +175,12 @@ stormdata$EVTYPE &lt;- revalue(stormdata$EVTYPE, c(&quot;NON-TSTM WIND&quot;  = 
 <pre><code>## The following `from` values were not present in `x`: NON-TSTM WIND</code></pre>
 <pre class="r"><code>stormdata$EVTYPE &lt;- revalue(stormdata$EVTYPE, c(&quot;TSTM WIND  (G45)&quot; = &quot;TSTM WIND 45&quot;))
 stormdata$EVTYPE &lt;- revalue(stormdata$EVTYPE, c(&quot;WND&quot; = &quot;WIND&quot;))
-stormdata$EVTYPE &lt;- revalue(stormdata$EVTYPE, c(&quot;WINDS&quot; = &quot;WIND&quot;))
-
-# examine which events (based on EVTYPE in the dataset) are the most harmful to population health. 
+stormdata$EVTYPE &lt;- revalue(stormdata$EVTYPE, c(&quot;WINDS&quot; = &quot;WIND&quot;))</code></pre>
+</div>
+<div id="personal_health" class="section level2">
+<h2>Personal_health</h2>
+<p>Across the United States, which types of events (as indicated in the EVTYPE variable) are most harmful with respect to population health?</p>
+<pre class="r"><code># examine which events (based on EVTYPE in the dataset) are the most harmful to population health. 
 # we will make a difference between the number of injuries en the number of fatalities
 
 # determine the number of injuries per event

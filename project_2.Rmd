@@ -11,7 +11,7 @@ In this report we try to answer two questions:
 1) Across the United States, which types of events (as indicated in the EVTYPE variable) are most harmful with respect to population health?
 2) Across the United States, which types of events have the greatest economic consequences?
 
-## load neccesary packages
+## Load  packages
 ```{r load_packages, echo=TRUE}
 library(ggplot2) # enhanced grahics
 library(ggthemes) # advanced themese
@@ -63,6 +63,11 @@ stormdata$EVTYPE <- revalue(stormdata$EVTYPE, c("NON-TSTM WIND"  = "NON TSTM WIN
 stormdata$EVTYPE <- revalue(stormdata$EVTYPE, c("TSTM WIND  (G45)" = "TSTM WIND 45"))
 stormdata$EVTYPE <- revalue(stormdata$EVTYPE, c("WND" = "WIND"))
 stormdata$EVTYPE <- revalue(stormdata$EVTYPE, c("WINDS" = "WIND"))
+```
+
+## Personal_health
+Across the United States, which types of events (as indicated in the EVTYPE variable) are most harmful with respect to population health?
+```{r population_health, echo=TRUE}
 
 # examine which events (based on EVTYPE in the dataset) are the most harmful to population health. 
 # we will make a difference between the number of injuries en the number of fatalities
@@ -91,7 +96,6 @@ top10_injuries_and_fatalities <- subset(top10_injuries_and_fatalities, select = 
 melted_top10_injuries_and_fatalities <- melt(top10_injuries_and_fatalities, id.vars = 'event')
 names(melted_top10_injuries_and_fatalities) <- c("Event", "fatality_injury", "Count")
 top10_injuries_and_fatalities$fatality_injury = top10_injuries_and_fatalities$injuries + top10_injuries_and_fatalities$fatalities
-
 ```
 
 ## Results
