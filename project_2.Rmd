@@ -17,6 +17,7 @@ library(ggplot2) # enhanced grahics
 library(ggthemes) # advanced themese
 library(reshape2)
 library(lattice)
+library(plyr)
 ```
 
 
@@ -26,9 +27,42 @@ library(lattice)
 # download the zip file
 download.file("https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2", destfile="./repdata-data-StormData.csv.bz2", method="curl")
 
-
 # read the csv from the zipfile
 stormdata <- read.csv('./repdata-data-StormData.csv.bz2', header=T)
+
+# columnsubset the dataframe. This analysis only uses the columns:
+# - EVTYPE
+# - BGN_DATE
+# - FATALITIES
+# - INJURIES
+# - PROPDMG
+# - PROPDMGEXP
+# - CROPDMG
+# - CROPDMGEXP
+
+stormdata <- stormdata[,c("EVTYPE","BGN_DATE","FATALITIES","INJURIES","PROPDMG","PROPDMGEXP","CROPDMG","CROPDMGEXP")]
+
+# rowsubset the dataframe. The data before 1996 does not contain alle kind of events (only tornado, thunderstorm, wind and hail) 
+# so we only use the data starting in 1996
+stormdata$YEAR <-  as.numeric(format(as.Date(stormdata$BGN_DATE, format = "%m/%d/%Y %H:%M:%S"), "%Y")) 
+stormdata <- subset(stormdata,stormdata$YEAR >= 1996)
+stormdata <- stormdata[,c("EVTYPE","BGN_DATE","FATALITIES","INJURIES","PROPDMG","PROPDMGEXP","CROPDMG","CROPDMGEXP")]
+
+# datacleaning
+
+# alle values to uppercase
+stormdata$EVTYPE <- toupper(stormdata$EVTYPE)
+# delete trailing and starting spaces
+stormdata$EVTYPE <- trimws(stormdata$EVTYPE,"both")
+# group some values
+stormdata$EVTYPE <- revalue(stormdata$EVTYPE, c("COASTALFLOOD" = "COASTAL FLOODING"))
+stormdata$EVTYPE <- revalue(stormdata$EVTYPE, c("NON-TSTM WIND" = "NON TSTM WIND"))
+stormdata$EVTYPE <- revalue(stormdata$EVTYPE, c("TSTM WIND (G40)" = "TSTM WIND 40"))
+stormdata$EVTYPE <- revalue(stormdata$EVTYPE, c("TSTM WIND (G45)" = "TSTM WIND 45"))
+stormdata$EVTYPE <- revalue(stormdata$EVTYPE, c("NON-TSTM WIND"  = "NON TSTM WIND"))
+stormdata$EVTYPE <- revalue(stormdata$EVTYPE, c("TSTM WIND  (G45)" = "TSTM WIND 45"))
+stormdata$EVTYPE <- revalue(stormdata$EVTYPE, c("WND" = "WIND"))
+stormdata$EVTYPE <- revalue(stormdata$EVTYPE, c("WINDS" = "WIND"))
 
 # examine which events (based on EVTYPE in the dataset) are the most harmful to population health. 
 # we will make a difference between the number of injuries en the number of fatalities
@@ -54,16 +88,27 @@ top10_injuries_and_fatalities <- head(injuries_and_fatalities[order(injuries_and
 top10_injuries_and_fatalities <- subset(top10_injuries_and_fatalities, select = c(event,injuries,fatalities) )
 
 # reshape the dataframe to the columns: event, injury/fatality, count
-top10_injuries_and_fatalities <- melt(top10_injuries_and_fatalities, id.vars = 'event')
-names(top10_injuries_and_fatalities) <- c("Event", "fatality_injury", "Count")
+melted_top10_injuries_and_fatalities <- melt(top10_injuries_and_fatalities, id.vars = 'event')
+names(melted_top10_injuries_and_fatalities) <- c("Event", "fatality_injury", "Count")
+top10_injuries_and_fatalities$fatality_injury = top10_injuries_and_fatalities$injuries + top10_injuries_and_fatalities$fatalities
+
 ```
 
 ## Results
 ```{r result, echo=TRUE}
-ggplot(top10_injuries_and_fatalities, aes(x = Event, y = Count, fill = fatality_injury)) +
+ggplot(melted_top10_injuries_and_fatalities, aes(x = Event, y = Count, fill = fatality_injury)) +
         geom_bar(stat = "identity") +    
         labs(fill="") +
         labs(x="", y="number of injuries and fatalities") + 
         ggtitle("Weather-related Fatality & Injury Counts")+
         coord_flip()
+
+ggplot(top10_injuries_and_fatalities, aes(x = event, y = fatality_injury, fill = fatality_injury)) +
+        geom_bar(stat = "identity") +    
+        labs(fill="") +
+        labs(x="", y="number of injuries and fatalities") + 
+        ggtitle("Weather-related Fatality & Injury Counts")+
+        coord_flip() +
+        scale_fill_gradient(low="yellow",high = "red")
+
 ```
