@@ -1,5 +1,7 @@
 ---
 title: 'Reproducible Research: Peer Assessment 2'
+Koen Deuze
+2017-04-06
 ---
 
 ## Synopsis
@@ -20,35 +22,31 @@ library(lattice)
 library(plyr)
 ```
 
-
-## Dataprocessing
-```{r dataprocessing, echo=TRUE}
+## Data reading
+The data is read from https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2
+```{r dataloading, echo=TRUE}
 
 # download the zip file
 download.file("https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2", destfile="./repdata-data-StormData.csv.bz2", method="curl")
 
 # read the csv from the zipfile
 stormdata <- read.csv('./repdata-data-StormData.csv.bz2', header=T)
+```
 
-# columnsubset the dataframe. This analysis only uses the columns:
-# - EVTYPE
-# - BGN_DATE
-# - FATALITIES
-# - INJURIES
-# - PROPDMG
-# - PROPDMGEXP
-# - CROPDMG
-# - CROPDMGEXP
-
+## Data processing
+We do some dataprocessing:
+- subsetting
+- event grouping
+```{r dataprocessing, echo=TRUE}
+# columnsubset the dataframe
 stormdata <- stormdata[,c("EVTYPE","BGN_DATE","FATALITIES","INJURIES","PROPDMG","PROPDMGEXP","CROPDMG","CROPDMGEXP")]
 
-# rowsubset the dataframe. The data before 1996 does not contain alle kind of events (only tornado, thunderstorm, wind and hail) 
-# so we only use the data starting in 1996
+# rowsubset the dataframe. The data before 1996 does not contain alle kind of events (only tornado, thunderstorm, wind and hail) so we only use the data starting in 1996
 stormdata$YEAR <-  as.numeric(format(as.Date(stormdata$BGN_DATE, format = "%m/%d/%Y %H:%M:%S"), "%Y")) 
 stormdata <- subset(stormdata,stormdata$YEAR >= 1996)
 stormdata <- stormdata[,c("EVTYPE","BGN_DATE","FATALITIES","INJURIES","PROPDMG","PROPDMGEXP","CROPDMG","CROPDMGEXP")]
 
-# datacleaning
+# some datacleaning
 
 # alle values to uppercase
 stormdata$EVTYPE <- toupper(stormdata$EVTYPE)
@@ -63,10 +61,21 @@ stormdata$EVTYPE <- revalue(stormdata$EVTYPE, c("NON-TSTM WIND"  = "NON TSTM WIN
 stormdata$EVTYPE <- revalue(stormdata$EVTYPE, c("TSTM WIND  (G45)" = "TSTM WIND 45"))
 stormdata$EVTYPE <- revalue(stormdata$EVTYPE, c("WND" = "WIND"))
 stormdata$EVTYPE <- revalue(stormdata$EVTYPE, c("WINDS" = "WIND"))
+stormdata$EVTYPE <- revalue(stormdata$EVTYPE, c("LAKESHORE FLOOD" = "FLOOD"))
+stormdata$EVTYPE <- revalue(stormdata$EVTYPE, c("FLOOD/FLASH FLOOD" = "FLOOD"))
+stormdata$EVTYPE <- revalue(stormdata$EVTYPE, c("COASTAL FLOODING" = "FLOOD"))
+stormdata$EVTYPE <- revalue(stormdata$EVTYPE, c("EROSION/CSTL FLOOD" = "FLOOD"))
+stormdata$EVTYPE <- revalue(stormdata$EVTYPE, c("URBAN/SML STREAM FLD" = "FLOOD"))
+stormdata$EVTYPE <- revalue(stormdata$EVTYPE, c("ICE JAM FLOOD (MINOR" = "FLOOD"))
+stormdata$EVTYPE <- revalue(stormdata$EVTYPE, c("URBAN FLOODING" = "FLOOD"))
+stormdata$EVTYPE <- revalue(stormdata$EVTYPE, c("FLASH FLOOD/FLOOD" = "FLOOD"))
+stormdata$EVTYPE <- revalue(stormdata$EVTYPE, c("FLASH FLOODING" = "FLOOD"))
+stormdata$EVTYPE <- revalue(stormdata$EVTYPE, c("FLOOD/FLASH/FLOOD" = "FLOOD"))
+stormdata$EVTYPE <- revalue(stormdata$EVTYPE, c("FLASH FLOOD" = "FLOOD"))
 ```
 
 ## Personal_health
-Across the United States, which types of events (as indicated in the EVTYPE variable) are most harmful with respect to population health?
+We determine across the United States, which types of events (as indicated in the EVTYPE variable) are most harmful with respect to population health?
 ```{r population_health, echo=TRUE}
 
 # examine which events (based on EVTYPE in the dataset) are the most harmful to population health. 
@@ -99,9 +108,9 @@ top10_injuries_and_fatalities$fatality_injury = top10_injuries_and_fatalities$in
 ```
 
 ## Economic_consequences
-Across the United States, which types of events have the greatest economic consequences?
-```{r economic_consequenes, echo=TRUE}
+We determine across the United States, which types of events have the greatest economic consequences?
 
+```{r economic_consequenes, echo=TRUE}
 # the column PRODMGEXP and CROPDMEXP contain alphabetical characters used to signify magnitude
 # it contains “K” en "k" for thousands, “M” and "m" for millions, “B” and "b" for billions and "H" and "h" for hundreds.
 temp_PROPDMG <- mapvalues(stormdata$PROPDMGEXP,
@@ -124,25 +133,26 @@ names(prop_damage_per_event) <- c("event","prop_damage")
 # merge the dataframes with cropdamage and propdamage
 damage_per_event <- merge(x = crop_damage_per_event, y = prop_damage_per_event, by = "event", all = TRUE)
 
+# create a new column with the sum of the property damage and the crop damage
 damage_per_event$total_damage <- damage_per_event$crop_damage + damage_per_event$prop_damage
 
-# determine what is the top 10 of events with the most damage
+# determine the top 10 of events with the most damage
 top10_damage <- head(damage_per_event[order(damage_per_event$total_damage,decreasing = T),],10)
-top10_damage
+top10_damage <- arrange(top10_damage,desc(total_damage))
 ```
 
- 
 ## Results
+The results are published in 3 plots
 ```{r result, echo=TRUE}
 
-ggplot(melted_top10_injuries_and_fatalities, aes(x = Event, y = Count, fill = fatality_injury)) +
+ggplot(melted_top10_injuries_and_fatalities, aes(x = reorder(Event, -Count), y = Count, fill = fatality_injury)) +
          geom_bar(stat = "identity") +    
          labs(fill="") +
          labs(x="", y="number of injuries and fatalities") + 
          ggtitle("Weather-related Fatality & Injury Counts")+
         theme(axis.text.x = element_text(angle = 90,hjust = 1))
 
-ggplot(top10_injuries_and_fatalities, aes(x = event, y = fatality_injury, fill = fatality_injury)) +
+ggplot(top10_injuries_and_fatalities, aes(x = reorder(event,-fatality_injury), y = fatality_injury, fill = fatality_injury)) +
         geom_bar(stat = "identity") +    
         labs(fill="") +
         labs(x="", y="number of injuries and fatalities") + 
@@ -150,13 +160,13 @@ ggplot(top10_injuries_and_fatalities, aes(x = event, y = fatality_injury, fill =
         scale_fill_gradient(low="yellow",high = "red") +
         theme(axis.text.x = element_text(angle = 90,hjust = 1))
 
-ggplot(top10_damage, aes(x = event, y = total_damage, fill = total_damage)) +
+ggplot(top10_damage, aes(x = reorder(event, -total_damage), y = total_damage/1000, fill = total_damage/1000)) +
         geom_bar(stat = "identity") +    
         labs(fill="") +
         labs(x="", y="total damage (crop and property)") + 
         ggtitle("Weather-related crop & property damage")+
         scale_fill_gradient(low="yellow",high = "red") +
         theme(axis.text.x = element_text(angle = 90,hjust = 1))
-
-
 ```
+
+The analysis shows that across the United States, Tornadoes are most harmful with respect to population health and the that floods have the greatest economic consequences.
